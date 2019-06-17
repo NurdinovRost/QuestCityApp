@@ -28,6 +28,8 @@ class TeamViewController: UIViewController {
         view.setGradientBackground(colorOne: Colors.backgroudStartColor, colorTwo: Colors.backgroudCenterColor, colorThree: Colors.backgroudEndColor)
         
         btnLeaveTeam.setGradientWindow(colorOne: Colors.buttonLeaveTeamFirstColor, colorTwo: Colors.buttonLeaveTeamSecondColor)
+        labelLogin.text = NetworkManager.shared.login
+        textFieldPassword.text = NetworkManager.shared.password
         // Do any additional setup after loading the view.
     }
 
@@ -50,6 +52,15 @@ class TeamViewController: UIViewController {
         
     }
 
+    
+    
+    @IBAction func btnLeaveQuest(_ sender: UIButton) {
+        if NetworkManager.shared.quest_id != "" && NetworkManager.shared.step != 0 {
+            requestLeaveQuest()
+        }
+    }
+    
+    
     @IBAction func btnCrateNameTeam(_ sender: UIButton) {
         requestRenameTeam()
     }
@@ -65,9 +76,7 @@ class TeamViewController: UIViewController {
                     switch response.result {
                     case .success(let value):
                         let json = JSON(value)
-                        print(json)
                         let message = json["message"]
-                        print(message)
                         if message == "ok" {
                             NetworkManager.shared.team_name = self.labelNameTeam.text!
                             self.labelNameTeam.text = ""
@@ -81,5 +90,36 @@ class TeamViewController: UIViewController {
         }
     }
     
+    @IBAction func btnLeaveQUest(_ sender: UIButton) {
+        let vc = storyboard?.instantiateViewController(withIdentifier: "logVC")
+        self.present(vc!, animated: true, completion: nil)
+    }
+    
+}
 
+
+func requestLeaveQuest() {
+    let params: [String : String] =
+        ["login": "\(NetworkManager.shared.login)",
+            "quest_id": "\(NetworkManager.shared.quest_id)",
+    ]
+    if true {
+        DispatchQueue.main.async {
+            Alamofire.request("http://" + "\(NetworkManager.shared.domain)" + "/api/v1.0/leaveQuest", method: .post, parameters: params, encoding: JSONEncoding.default).responseJSON(completionHandler: { (response) in
+                switch response.result {
+                case .success(let value):
+                    let json = JSON(value)
+                    print(json)
+                    let message = json["message"]
+                    if message == "ok" {
+                        NetworkManager.shared.quest_id = ""
+                        print("gege")
+                    }
+                    
+                case .failure(let error):
+                    print(error.localizedDescription)
+                }
+            })
+        }
+    }
 }

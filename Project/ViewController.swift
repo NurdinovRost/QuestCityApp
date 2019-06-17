@@ -44,6 +44,7 @@ class ViewController: UIViewController {
                             let vc = self.storyboard?.instantiateViewController(withIdentifier: "NavigationController")
                             NetworkManager.shared.team_name = team_name.stringValue
                             NetworkManager.shared.login = params["login"]!
+                            NetworkManager.shared.password = params["password"]!
                             self.present(vc!, animated: false, completion: nil)
                         }
 

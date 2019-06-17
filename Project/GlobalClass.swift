@@ -13,9 +13,14 @@ class NetworkManager {
     static let shared = NetworkManager()
     
     var container: ContainerViewController!
-
-    let domain = ""
-    let domainStatic = ""
+    
+    var dictionary = [Int: String]()
+    var timeTask = 0
+    var timeAll = 0
+    var timer: Timer?
+    var password = ""
+    let domain = "...."
+    let domainStatic = "http://..../quest_images/"
     var team_name = "Name team"
     var login = "login"
     var quest_id = ""

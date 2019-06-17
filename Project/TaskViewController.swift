@@ -41,13 +41,13 @@ func requestListOfTasks() {
             "login": NetworkManager.shared.login,
             "quest_id": NetworkManager.shared.quest_id,
         ]
+        NetworkManager.shared.itemTaskArray.removeAll()
         Alamofire.request("http://" + "\(NetworkManager.shared.domain)" + "/api/v1.0/listOfTasks", method: .post, parameters: params, encoding: JSONEncoding.default).responseJSON(completionHandler: { (response) in
             switch response.result {
             case .success(let value):
                 let json = JSON(value)
-                print(response)
                 let message = json["message"]
-                let count = json["count"]
+                //let count = json["count"]
                 if let tasks = json["tasks"].array {
                     for task in tasks {
                         let task_id = task["task_id"].stringValue
@@ -57,21 +57,21 @@ func requestListOfTasks() {
                         let time = task["time"].stringValue
                         let time_tips = task["time_tips"].arrayValue
                         let tips = task["tips"].arrayValue
-                        NetworkManager.shared.itemTaskArray.append(Task(task_id: task_id, img: img, content: convert, answers: answers, time: time, time_tips: time_tips, tips: tips)) // ?!?!?!?!?!?!?!?
+                        NetworkManager.shared.itemTaskArray.append(Task(task_id: task_id, img: img, content: convert, answers: answers, time: time, time_tips: time_tips, tips: tips))
                         
                     }
                     
                 }
                 if message == "ok" {
                     if NetworkManager.shared.step < NetworkManager.shared.itemTaskArray.count {
-                        if NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].img == "url/id_0" {
-                            NetworkManager.shared.container.segueIdentifierReceivedFromParent("first")
-                        } else {
-                            NetworkManager.shared.container.segueIdentifierReceivedFromParent("first")
-                        }
+                        print("STEP  -  " + String(NetworkManager.shared.step))
+                        print("COUNT  -  " + String(NetworkManager.shared.itemTaskArray.count))
+                        NetworkManager.shared.container.segueIdentifierReceivedFromParent("first")
                     } else {
-                        print("???????????????")
+                        NetworkManager.shared.container.segueIdentifierReceivedFromParent("three")
                     }
+                } else {
+                    print("???????????????")
                 }
                 
             case .failure(let error):

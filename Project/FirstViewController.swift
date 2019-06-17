@@ -12,10 +12,7 @@ import Alamofire
 import Kingfisher
 
 class FirstViewController: UIViewController {
-    
-    var timeTask : Int = 60
-    var timeAll = 10000
-    
+
     // Constraints++++++++++
     
     @IBOutlet weak var lblTextTaskTop: NSLayoutConstraint!
@@ -36,18 +33,19 @@ class FirstViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        requestGetState()
         view.setGradientBackground(colorOne: Colors.backgroudStartColor, colorTwo: Colors.backgroudCenterColor, colorThree: Colors.backgroudEndColor)
         lblTextTask.layer.borderWidth = 2
         lblTextTask.layer.borderColor = UIColor.black.cgColor
-        print(NetworkManager.shared.itemTaskArray)
-        var _ = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(updateCounter), userInfo: nil, repeats: true)
-        updateView(flag: false)
+        //print(NetworkManager.shared.itemTaskArray)
+        stopTimer()
+        startTimer()
 
     }
 
 override func viewWillLayoutSubviews() {
-
-    if imgTask.isHidden == true {
+    updateView(flag: false)
+    if imgTask.isHidden {
         lblTextTaskTop.constant = 8
     } else {
         lblTextTaskTop.constant = 144
@@ -56,24 +54,25 @@ override func viewWillLayoutSubviews() {
     
     
     @IBAction func btnActionHintFirst(_ sender: UIButton) {
+        requestUseTip(tip_number: sender.tag)
+        requestGetState()
         let temp = parseJsonToStr(temp: NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].tips[0])
         createAlert(title: "Подсказка №1", message: temp)
+        
     }
     
     @IBAction func btnSendAnswer(_ sender: UIButton) {
-        
-        imgTask.isHidden = false
+        print("BTN SEND START STEP  --  " + String(NetworkManager.shared.step))
         for item in NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].answers {
             if let a = item as? JSON {
                 if let string = a.rawString() {
-                    if string == textFieldAnswer.text! {
+                    if string == textFieldAnswer.text!.lowercased() {
+                        requestCompleteTask()
                         NetworkManager.shared.step += 1
+                        print("BTN SEND END STEP  --  " + String(NetworkManager.shared.step))
+                        textFieldAnswer.text! = ""
                         if NetworkManager.shared.step < NetworkManager.shared.itemTaskArray.count {
-                            if NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].img == "qwef" {
-                                updateView(flag: true)
-                            } else {
-                                updateView(flag: true)
-                            }
+                            updateView(flag: true)
                         } else {
                             NetworkManager.shared.container.segueIdentifierReceivedFromParent("three")
                         }
@@ -87,11 +86,38 @@ override func viewWillLayoutSubviews() {
         }
     }
     
+    
+    func startTimer() {
+        
+        if NetworkManager.shared.timer == nil {
+            NetworkManager.shared.timer = Timer.scheduledTimer(timeInterval: 1, target: self, selector: #selector(self.updateCounter), userInfo: nil, repeats: true)
+        }
+    }
+    
+    func stopTimer() {
+        if NetworkManager.shared.timer != nil {
+            NetworkManager.shared.timer?.invalidate()
+            NetworkManager.shared.timer = nil
+        }
+    }
+    
+    
     func updateView(flag: Bool) {
         lblTextTask.text = NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].content
-        lblNameTask.text = "Задание №" + String(Int(NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].task_id.split(separator: "_")[1])! + 1)
+        lblNameTask.text = "Задание №" + String(NetworkManager.shared.step + 1)
+        
+        if NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].img != "" {
+            imgTask.isHidden = false
+            let url = URL(string: NetworkManager.shared.domainStatic + NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].img)
+            imgTask.kf.indicatorType = .activity
+            imgTask.kf.setImage(with: url, placeholder: nil)
+            imgTask.contentMode = .scaleAspectFit
+        } else {
+            imgTask.isHidden = true
+        }
+        
         if flag {
-            timeTask = 2000
+            NetworkManager.shared.timeTask = 0
         }
     }
     
@@ -127,22 +153,15 @@ override func viewWillLayoutSubviews() {
     }
     
     @objc func updateCounter() {
-        //you code, this is an example
-        if timeTask > -1 {
-            //print("FIRST1")
-            lblTimeTask.text = convertTime(secs: timeTask)
-            lblTimeAll.text = convertTime(secs: timeAll)
-            //print("FIRST2")
-            timeAll += 1
-            timeTask -= 1
-        } else {
-            lblTimeTask.backgroundColor = UIColor.red
-            createAlert(title: "ПОШЕЛ НАХУЙ ПИДОР", message: "за мат извени")
-        }
+        lblTimeTask.text = convertTime(secs: NetworkManager.shared.timeTask)
+        lblTimeAll.text = convertTime(secs: NetworkManager.shared.timeAll)
+        //print("FIRST2")
+        NetworkManager.shared.timeAll += 1
+        NetworkManager.shared.timeTask += 1
     }
 }
     
-    func requestCompleteTask() {
+func requestCompleteTask() {
         
         NetworkManager.shared.itemListArray.removeAll()
         DispatchQueue.main.async {
@@ -155,19 +174,11 @@ override func viewWillLayoutSubviews() {
                 switch response.result {
                 case .success(let value):
                     let json = JSON(value)
-                    print(response)
+                    print("IT IS COMPLETE TASK STEP" + String(NetworkManager.shared.step))
                     let message = json["message"]
                    
                     if message == "ok" {
-                        if NetworkManager.shared.step < NetworkManager.shared.itemTaskArray.count {
-                            if NetworkManager.shared.itemTaskArray[NetworkManager.shared.step].img == "url/id_0" {
-                                NetworkManager.shared.container.segueIdentifierReceivedFromParent("first")
-                            } else {
-                                NetworkManager.shared.container.segueIdentifierReceivedFromParent("second")
-                            }
-                        } else {
-                            print("???????????????")
-                        }
+                        
                     }
                     
                 case .failure(let error):
@@ -176,5 +187,76 @@ override func viewWillLayoutSubviews() {
             })
         }
     }
+
+func requestUseTip(tip_number: Int) {
+    
+    NetworkManager.shared.itemListArray.removeAll()
+    DispatchQueue.main.async {
+        let params = [
+            "login": NetworkManager.shared.login,
+            "quest_id": NetworkManager.shared.quest_id,
+            "task_number": String(NetworkManager.shared.step - 1),
+            "tip_number": String(tip_number)
+            ]
+        Alamofire.request("http://" + "\(NetworkManager.shared.domain)" + "/api/v1.0/useTip", method: .post, parameters: params, encoding: JSONEncoding.default).responseJSON(completionHandler: { (response) in
+            switch response.result {
+            case .success(let value):
+                let json = JSON(value)
+                let message = json["message"]
+                
+                if message == "ok" {
+                    
+                }
+                
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        })
+    }
+}
+
+
+func requestGetState() {
+    let params: [String : String] =
+        ["login": "\(NetworkManager.shared.login)"]
+    DispatchQueue.main.async {
+        Alamofire.request("http://" + "\(NetworkManager.shared.domain)" + "/api/v1.0/getState", method: .post, parameters: params, encoding: JSONEncoding.default).responseJSON(completionHandler: { (response) in
+            switch response.result {
+            case .success(let value):
+                let json = JSON(value)
+                //print(response)
+                let message = json["message"]
+                let quest_id = json["quest_id"]
+                let team_name = json["team_name"]
+                let times = json["times"].arrayValue
+                let times_complete = json["times_complete"].arrayValue
+                let step = json["step"]
+                let date_now = json["date_now"]
+                let time_now = json["time_now"]
+                NetworkManager.shared.quest_id = quest_id.stringValue
+                NetworkManager.shared.team_name = team_name.stringValue
+                NetworkManager.shared.date_now = date_now.stringValue
+                NetworkManager.shared.time_now = time_now.stringValue
+                for item in times {
+                    NetworkManager.shared.times.append(item.stringValue)
+                }
+                for item in times_complete {
+                    NetworkManager.shared.times_complete.append(item.stringValue)
+                }
+                
+                if message == "ok" {
+                    NetworkManager.shared.step = Int(step.stringValue)!
+
+                } else {
+                    NetworkManager.shared.step = 0
+                }
+                
+            case .failure(let error):
+                print(error.localizedDescription)
+            }
+        })
+    }
+}
+
 
 

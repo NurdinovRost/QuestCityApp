@@ -1,11 +1,3 @@
-//
-//  MenuViewController.swift
-//  Project
-//
-//  Created by Ростислав Нурдинов on 07.02.19.
-//  Copyright © 2019 Ростислав Нурдинов. All rights reserved.
-//
-
 import UIKit
 import Alamofire
 import SwiftyJSON
@@ -97,21 +89,22 @@ class MenuViewController: UIViewController, UITableViewDelegate, UITableViewData
                 switch response.result {
                 case .success(let value):
                     let json = JSON(value)
+                    print(json)
+                    var cc = 0
                     let message = json["message"]
-                    let count = json["count"]
+                    //let count = json["count"]
                     if let list_of_quests = json["list_of_quests"].array {
                         for item in list_of_quests {
-                            //print("+++++++++++++++++++")
-                            //print(list_of_quests)
                             let quest_id = item["quest_id"].stringValue
                             let name = item["name"].stringValue
                             let place = item["place"].stringValue
                             let date = item["date"].stringValue
                             let time = item["time"].stringValue
-                            //let amount_of_cp = item["amount_of_cp"].stringValue
                             let duration = item["duration"].stringValue
                             let datetime = convert(date: date, time: time)
-                            NetworkManager.shared.itemListArray.append(List(name: name, place: place, date: datetime, duration: duration, quest_id: Int(quest_id.split(separator: "_")[1])!)) // ?!?!?!?!?!?!?!?
+                            NetworkManager.shared.dictionary[cc] = quest_id
+                            NetworkManager.shared.itemListArray.append(List(name: name, place: place, date: datetime, duration: duration, quest_id: cc))
+                            cc += 1
 
                         }
                         

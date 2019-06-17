@@ -31,13 +31,13 @@ class ListCollectionViewCell: UICollectionViewCell {
     }
 
     @IBAction func btnActionJoinToQuest(_ sender: UIButton) {
-        requestToBD(btnTag: "id_" + String(sender.tag))
+        requestToBD(btnTag: sender.tag)
     }
     
-    func requestToBD(btnTag: String) {
+    func requestToBD(btnTag: Int) {
         let params: [String : String] =
             ["login": "\(NetworkManager.shared.login)",
-                "quest_id": "\(btnTag)",
+                "quest_id": NetworkManager.shared.dictionary[btnTag]!,
         ]
         DispatchQueue.main.async {
             Alamofire.request("http://" + "\(NetworkManager.shared.domain)" + "/api/v1.0/joinToQuest", method: .post, parameters: params, encoding: JSONEncoding.default).responseJSON(completionHandler: { (response) in
@@ -47,7 +47,8 @@ class ListCollectionViewCell: UICollectionViewCell {
                     let message = json["message"]
                     print(message)
                     if message == "ok" {
-                        self.btnJointToQuest.isHidden = false
+                        self.btnJointToQuest.isHidden = true
+                        NetworkManager.shared.quest_id = NetworkManager.shared.dictionary[btnTag]!
                     }
                     
                 case .failure(let error):
